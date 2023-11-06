@@ -33,7 +33,10 @@ def CheckCollisionPlatforms(platform, player):
     return False
 
 def CheckCollisionPipes(pipe, player):
-    NotImplemented
+    if player.x + player.width > pipe.x and player.x < pipe.x + pipe.width:
+        if player.y + player.height > pipe.y and player.y < pipe.y + pipe.height:
+            return True
+    return False
 
 def main():
     # Initialize Pygame
@@ -148,10 +151,13 @@ def main():
                     player.onGround = True
                     if player.jumping:
                         player.vel_y = 0
-        
+        #TODO : Fix collision with pipes
         for pipe in pipes:
             if CheckCollisionPipes(pipe, player):
-                    NotImplemented
+                player.y = pipe.y - player.height
+                player.onGround = True
+                if player.jumping:
+                    player.vel_y = 0
 
         # Move player
         if(keys[pygame.K_q]):
@@ -169,11 +175,6 @@ def main():
                     pipe.x -= PLAYER_SPEED
             else:
                 player.x += PLAYER_SPEED
-
-        # # Check if platforms have gone off-screen, and reposition them to the right
-        # for platform in platforms:
-        #     if platform.x + platform.width < 0:
-        #         platform.x = SCREEN_WIDTH
 
         if player.y > (SCREEN_HEIGHT - player.height):
             running = False
