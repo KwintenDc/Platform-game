@@ -34,8 +34,14 @@ def CheckCollisionPlatforms(platform, player):
 
 def CheckCollisionPipes(pipe, player):
     if player.x + player.width > pipe.x and player.x < pipe.x + pipe.width:
+        if player.y + player.height > pipe.y and player.y + player.height < pipe.y + 1:
+            return "T"
+    if player.x + player.width < pipe.x + pipe.width/2 and player.x + player.width > pipe.x: 
         if player.y + player.height > pipe.y and player.y < pipe.y + pipe.height:
-            return True
+            return "LW"
+    if player.x > pipe.x + pipe.width/2 and player.x < pipe.x + pipe.width:
+        if player.y + player.height > pipe.y and player.y < pipe.y + pipe.height:
+            return "RW"
     return False
 
 def main():
@@ -100,14 +106,17 @@ def main():
         [(SCREEN_WIDTH + 100) *3, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
     ]
 
+    ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
+
     #Create pipes
     pipes_data = [
         [1000, SCREEN_HEIGHT-GROUND_THICKNESS-100, 50, 100, COLOR_GRAY],
+        [1250, SCREEN_HEIGHT-GROUND_THICKNESS-200, 50, 200, COLOR_GRAY],
+        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-300, 50, 300, COLOR_GRAY],
     ]
 
     pipes = [Pipes(x, y, width, height, color) for x, y, width, height, color in pipes_data]
 
-    ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
 
     font = pygame.font.Font(None, 36)  # You can choose the font and size you prefer
     # Game loop
@@ -151,10 +160,19 @@ def main():
                     player.onGround = True
                     if player.jumping:
                         player.vel_y = 0
-        #TODO : Fix collision with pipes
         for pipe in pipes:
-            if CheckCollisionPipes(pipe, player):
+            if CheckCollisionPipes(pipe, player) == "T":
                 player.y = pipe.y - player.height
+                player.onGround = True
+                if player.jumping:
+                    player.vel_y = 0
+            elif CheckCollisionPipes(pipe, player) == "LW":
+                player.x = pipe.x - player.width
+                player.onGround = True
+                if player.jumping:
+                    player.vel_y = 0
+            elif CheckCollisionPipes(pipe, player) == "RW":
+                player.x = pipe.x + pipe.width
                 player.onGround = True
                 if player.jumping:
                     player.vel_y = 0
