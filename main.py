@@ -52,16 +52,17 @@ def main():
     SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
     SCREEN_COLOR = (35, 170, 200)  # Lightblue
 
-    COLOR_WHITE = (255, 255, 255)  # White
-    COLOR_BLACK = (0, 0, 0)  # Black
-    COLOR_GRAY = (128, 128, 128)  # Gray
-    COLOR_RED = (255, 0, 0)  # Red
-    COLOR_GREEN = (0, 255, 0)  # Green
-    COLOR_BLUE = (0, 0, 255)  # Blue
-    COLOR_YELLOW = (255, 255, 0)  # Yellow
-    COLOR_MAGENTA = (255, 0, 255)  # Magenta
-    COLOR_CYAN = (0, 255, 255)  # Cyan
+    COLOR_WHITE = (255, 255, 255)  
+    COLOR_BLACK = (0, 0, 0)  
+    COLOR_GRAY = (128, 128, 128)  
+    COLOR_RED = (255, 0, 0)
+    COLOR_GREEN = (0, 255, 0) 
+    COLOR_BLUE = (0, 0, 255)  
+    COLOR_YELLOW = (255, 255, 0) 
+    COLOR_MAGENTA = (255, 0, 255) 
+    COLOR_CYAN = (0, 255, 255)
     COLOR_BROWN = (231, 90, 16)
+    COLOR_DARK_BROWN = (69, 17, 0)
 
     PLAYER_HEIGHT = 65
     PLAYER_WIDTH = PLAYER_HEIGHT / 2
@@ -90,7 +91,9 @@ def main():
     # Create platforms
     platforms_data = [
         # (x, y, width, height, color)
-        [450.0, 400.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
+        [450, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+        [2500, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+        [2800, 300, 200, PLATFORM_THICKNESS, COLOR_BROWN],
     ]
 
     platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in platforms_data]
@@ -98,7 +101,7 @@ def main():
     ground_platforms_data = [
         # (x, y, width, height, color)
         [0, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH * 2.5, GROUND_THICKNESS, GROUND_COLOR],
-        [(SCREEN_WIDTH * 2.5) + 200, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
+        [(SCREEN_WIDTH * 2.5) + 200, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH * 3.5, GROUND_THICKNESS, GROUND_COLOR],
     ]
 
     ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
@@ -110,6 +113,16 @@ def main():
         [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
         [1250, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
         [1500, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
+
+        [3400, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+        [3400 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [3400 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [3400 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+
+        [3850, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+        [3850 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [3850 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [3850 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
     ]
 
     obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
