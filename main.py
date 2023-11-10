@@ -100,8 +100,9 @@ def main():
 
     ground_platforms_data = [
         # (x, y, width, height, color)
-        [0, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH * 2.5, GROUND_THICKNESS, GROUND_COLOR],
-        [(SCREEN_WIDTH * 2.5) + 200, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH * 3.5, GROUND_THICKNESS, GROUND_COLOR],
+        [0, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
+        [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 1950, GROUND_THICKNESS, GROUND_COLOR],
+        [4150 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 1950, GROUND_THICKNESS, GROUND_COLOR],
     ]
 
     ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
