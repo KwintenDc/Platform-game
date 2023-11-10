@@ -22,7 +22,7 @@ class Platform(GameObject):
     def __init__(self, x, y, width, height, color):
         super().__init__(x, y, width, height, color)
 
-class Pipes(GameObject):
+class Obstacles(GameObject):
     def __init__(self, x, y, width, height, color):
         super().__init__(x, y, width, height, color)
 
@@ -32,15 +32,15 @@ def CheckCollisionPlatforms(platform, player):
             return True
     return False
 
-def CheckCollisionPipes(pipe, player):
-    if player.x + player.width > pipe.x and player.x < pipe.x + pipe.width:
-        if player.y + player.height > pipe.y and player.y + player.height < pipe.y + 1:
+def CheckCollisionObstacles(obstacle, player):
+    if player.x + player.width > obstacle.x and player.x < obstacle.x + obstacle.width:
+        if player.y + player.height > obstacle.y and player.y + player.height < obstacle.y + 1:
             return "T"
-    if player.x + player.width < pipe.x + pipe.width/2 and player.x + player.width > pipe.x: 
-        if player.y + player.height > pipe.y and player.y < pipe.y + pipe.height:
+    if player.x + player.width < obstacle.x + obstacle.width/2 and player.x + player.width > obstacle.x: 
+        if player.y + player.height > obstacle.y and player.y < obstacle.y + obstacle.height:
             return "LW"
-    if player.x > pipe.x + pipe.width/2 and player.x < pipe.x + pipe.width:
-        if player.y + player.height > pipe.y and player.y < pipe.y + pipe.height:
+    if player.x > obstacle.x + obstacle.width/2 and player.x < obstacle.x + obstacle.width:
+        if player.y + player.height > obstacle.y and player.y < obstacle.y + obstacle.height:
             return "RW"
     return False
 
@@ -63,22 +63,21 @@ def main():
     COLOR_CYAN = (0, 255, 255)  # Cyan
     COLOR_BROWN = (231, 90, 16)
 
-    PLAYER_HEIGHT = 50
+    PLAYER_HEIGHT = 65
     PLAYER_WIDTH = PLAYER_HEIGHT / 2
     PLAYER_COLOR = COLOR_BLUE
     PLAYER_SPEED = 0.25
 
     PLATFORM_THICKNESS = 40
-    PLATFORM_SPEED = 0.05
 
     GROUND_COLOR = COLOR_GREEN
     GROUND_THICKNESS = 50
-    GRAVITY = 0.0008  
-    JUMP_STRENGTH = -0.5  
+    GRAVITY = 0.0008            # Acceleration due to gravity
+    JUMP_STRENGTH = -0.5        # Negative because y-axis is flipped
 
     # Create the screen
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Platform Test")
+    pygame.display.set_caption("Platform Game")
 
     # Initialize player position, velocity, and jump state
     player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
@@ -90,35 +89,32 @@ def main():
 
     # Create platforms
     platforms_data = [
-        # (x, y, width, height, color, speed)
-        [100.0, 400.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
-        [400.0, 300.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
-        [200.0, 200.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
-        [500.0, 100.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
+        # (x, y, width, height, color)
+        [450.0, 400.0, 200.0, PLATFORM_THICKNESS, COLOR_BROWN],
     ]
 
     platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in platforms_data]
 
     ground_platforms_data = [
-        [0, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
-        [SCREEN_WIDTH + 100, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
-        [(SCREEN_WIDTH + 100) *2, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
-        [(SCREEN_WIDTH + 100) *3, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
+        # (x, y, width, height, color)
+        [0, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH * 2.5, GROUND_THICKNESS, GROUND_COLOR],
+        [(SCREEN_WIDTH * 2.5) + 200, SCREEN_HEIGHT - GROUND_THICKNESS, SCREEN_WIDTH, GROUND_THICKNESS, GROUND_COLOR],
     ]
 
     ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
 
-    #Create pipes
-    pipes_data = [
-        [1000, SCREEN_HEIGHT-GROUND_THICKNESS-100, 50, 100, COLOR_GRAY],
-        [1250, SCREEN_HEIGHT-GROUND_THICKNESS-200, 50, 200, COLOR_GRAY],
-        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-300, 50, 300, COLOR_GRAY],
+    #Create obstacles
+    obstacles_data = [
+        # (x, y, width, height, color)
+        # [x , SCREEN_HEIGHT-GROUND_THICKNESS-height, width, height, color]
+        [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+        [1250, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
     ]
 
-    pipes = [Pipes(x, y, width, height, color) for x, y, width, height, color in pipes_data]
+    obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
 
-
-    font = pygame.font.Font(None, 36)  # You can choose the font and size you prefer
+    font = pygame.font.Font(None, 36) 
     # Game loop
     running = True
     while running:
@@ -146,53 +142,48 @@ def main():
         player.y += player.vel_y 
 
         player.onGround = False
+
+        # Check for collisions on platforms
         for platform in platforms:
             if not keys[pygame.K_s]:
                 if CheckCollisionPlatforms(platform, player):
                     player.y = platform.y - player.height
                     player.onGround = True
-                    if player.jumping:
-                        player.vel_y = 0
 
+        # Check for collisions on ground
         for ground in ground_platforms:
             if CheckCollisionPlatforms(ground, player):
                     player.y = ground.y - player.height
                     player.onGround = True
-                    if player.jumping:
-                        player.vel_y = 0
-        for pipe in pipes:
-            if CheckCollisionPipes(pipe, player) == "T":
-                player.y = pipe.y - player.height
+
+        # Check for collisions with obstacles
+        for obstacle in obstacles:
+            if CheckCollisionObstacles(obstacle, player) == "T":
+                player.y = obstacle.y - player.height
                 player.onGround = True
-                if player.jumping:
-                    player.vel_y = 0
-            elif CheckCollisionPipes(pipe, player) == "LW":
-                player.x = pipe.x - player.width
-                player.onGround = True
-                if player.jumping:
-                    player.vel_y = 0
-            elif CheckCollisionPipes(pipe, player) == "RW":
-                player.x = pipe.x + pipe.width
-                player.onGround = True
-                if player.jumping:
-                    player.vel_y = 0
+
+            elif CheckCollisionObstacles(obstacle, player) == "LW":
+                player.x = obstacle.x - player.width 
+
+            elif CheckCollisionObstacles(obstacle, player) == "RW":
+                player.x = obstacle.x + obstacle.width        
 
         # Move player
-        if(keys[pygame.K_q]):
-            if(player.x > 0):
+        if keys[pygame.K_q]:
+            if player.x > 0:
                 player.x -= PLAYER_SPEED
 
         # Move objects
         if keys[pygame.K_d]:
-            if(player.x > SCREEN_WIDTH / 2):
-                for platform in platforms:
-                    platform.x -= PLAYER_SPEED
-                for ground in ground_platforms:
-                    ground.x -= PLAYER_SPEED
-                for pipe in pipes:
-                    pipe.x -= PLAYER_SPEED
-            else:
-                player.x += PLAYER_SPEED
+                if player.x > SCREEN_WIDTH / 2:
+                    for platform in platforms:
+                        platform.x -= PLAYER_SPEED
+                    for ground in ground_platforms:
+                        ground.x -= PLAYER_SPEED
+                    for obstacle in obstacles:
+                        obstacle.x -= PLAYER_SPEED
+                else:
+                    player.x += PLAYER_SPEED
 
         if player.y > (SCREEN_HEIGHT - player.height):
             running = False
@@ -201,9 +192,9 @@ def main():
         # Color the screen blue
         screen.fill(SCREEN_COLOR)
 
-        # Draw the platforms
+        # Draw the platforms and remove them if they go off screen
         for platform in platforms:
-            if(platform.x + platform.width < 0):
+            if platform.x + platform.width < 0:
                 platforms.remove(platform)
             else:
                 pygame.draw.rect(
@@ -211,19 +202,19 @@ def main():
                 )
 
         for ground in ground_platforms:
-            if(ground.x + ground.width < 0):
+            if ground.x + ground.width < 0:
                 ground_platforms.remove(ground)
             else:
                 pygame.draw.rect(
                     screen, ground.color, (int(ground.x), int(ground.y), int(ground.width), int(ground.height))
                 )
         
-        for pipe in pipes:
-            if(pipe.x + pipe.width < 0):
-                pipes.remove(pipe)
+        for obstacle in obstacles:
+            if obstacle.x + obstacle.width < 0:
+                obstacles.remove(obstacle)
             else:
                 pygame.draw.rect(
-                    screen, pipe.color, (int(pipe.x), int(pipe.y), int(pipe.width), int(pipe.height))
+                    screen, obstacle.color, (int(obstacle.x), int(obstacle.y), int(obstacle.width), int(obstacle.height))
                 )
 
         # Draw the player
@@ -236,7 +227,6 @@ def main():
         screen.blit(text, (10, 10))
 
         # Update the display
-        # pygame.display.flip()
         pygame.display.update()
 
     # Quit Pygame
