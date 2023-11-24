@@ -11,12 +11,13 @@ class GameObject:
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 class Player(GameObject):
-    def __init__(self, x, y, width, height, color, vel_y, speed, onGround, jumping):
+    def __init__(self, x, y, width, height, color, vel_y, speed, onGround, isJumping, isMoving):
         super().__init__(x, y, width, height, color)
         self.vel_y = vel_y
         self.speed = speed
         self.onGround = onGround
-        self.jumping = jumping
+        self.isJumping = isJumping
+        self.isMoving = isMoving
 
 class Platform(GameObject):
     def __init__(self, x, y, width, height, color):
@@ -26,7 +27,13 @@ class Obstacles(GameObject):
     def __init__(self, x, y, width, height, color):
         super().__init__(x, y, width, height, color)
 
-def CheckCollisionPlatforms(platform, player):
+class Enemies(GameObject):
+    def __init__(self, x, y, width, height, color, speed, walking_left):
+        super().__init__(x, y, width, height, color)
+        self.speed = speed
+        self.walking_left = walking_left
+                
+def CheckCollisionPlatforms(platform, player): 
     if player.x < platform.x + platform.width and player.x > platform.x - player.width:
         if player.y + player.height > platform.y and player.y + player.height < platform.y + 1:
             return True
@@ -43,6 +50,20 @@ def CheckCollisionObstacles(obstacle, player):
         if player.y + player.height > obstacle.y and player.y < obstacle.y + obstacle.height:
             return "RW"
     return False
+
+def MoveEnemy(enemies, player):
+    if player.isMoving is True:
+        for enemy in enemies:
+            if enemy.walking_left is True:
+                enemy.x -= (player.speed + enemy.speed)
+            elif enemy.walking_left is False:
+                enemy.x += (enemy.speed - player.speed)
+    else: 
+        for enemy in enemies:
+            if enemy.walking_left is True:
+                enemy.x -= (enemy.speed)
+            elif enemy.walking_left is False:
+                enemy.x += (enemy.speed) 
 
 def main():
     # Initialize Pygame
@@ -69,6 +90,11 @@ def main():
     PLAYER_COLOR = COLOR_BLUE
     PLAYER_SPEED = 0.25
 
+    ENEMY_HEIGHT = 30
+    ENEMY_WIDTH = 30
+    ENEMY_COLOR = COLOR_RED
+    ENEMY_SPEED = 0.10 
+
     PLATFORM_THICKNESS = 40
 
     GROUND_COLOR = COLOR_GREEN
@@ -84,9 +110,13 @@ def main():
     player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
     player_vel_y = 0
     onGround = False
-    jumping = False
+    isJumping = False
+    isMoving = False
 
-    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, jumping)
+    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
+
+    # Initialize enenmy states
+    walking_left = True
 
     # Create platforms
     platforms_data = [
@@ -101,8 +131,8 @@ def main():
     ground_platforms_data = [
         # (x, y, width, height, color)
         [0, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
-        [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 1950, GROUND_THICKNESS, GROUND_COLOR],
-        [4150 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 1950, GROUND_THICKNESS, GROUND_COLOR],
+        [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2200, GROUND_THICKNESS, GROUND_COLOR],
+        [4400 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
     ]
 
     ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
@@ -112,21 +142,27 @@ def main():
         # (x, y, width, height, color)
         # [x , SCREEN_HEIGHT-GROUND_THICKNESS-height, width, height, color]
         [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
-        [1250, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
-        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
+        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+        [1750, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
 
-        [3400, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
-        [3400 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
-        [3400 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
-        [3400 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+        [3650, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+        [3650 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [3650 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [3650 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
 
-        [3850, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
-        [3850 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
-        [3850 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
-        [3850 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+        [4100, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+        [4100 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [4100 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [4100 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
     ]
 
     obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
+
+    enemies_data = [
+        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
+    ] 
+
+    enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
 
     font = pygame.font.Font(None, 36) 
     # Game loop
@@ -170,7 +206,7 @@ def main():
                     player.y = ground.y - player.height
                     player.onGround = True
 
-        # Check for collisions with obstacles
+        # Check for collisions with obstacles and check collisions for enemies with obstacles
         for obstacle in obstacles:
             if CheckCollisionObstacles(obstacle, player) == "T":
                 player.y = obstacle.y - player.height
@@ -180,7 +216,23 @@ def main():
                 player.x = obstacle.x - player.width 
 
             elif CheckCollisionObstacles(obstacle, player) == "RW":
-                player.x = obstacle.x + obstacle.width        
+                player.x = obstacle.x + obstacle.width   
+
+            
+            for enemy in enemies:
+                if CheckCollisionObstacles(obstacle, enemy) == "RW":
+                    enemy.walking_left = False
+                    enemy.x = obstacle.x + obstacle.width
+                if CheckCollisionObstacles(obstacle, enemy) == "LW":
+                    enemy.walking_left = True
+                    enemy.x = obstacle.x - enemy.width     
+
+        # Check for collisions with enemies
+        for enemy in enemies:
+            if CheckCollisionObstacles(enemy, player) in ["T", "LW", "RW"]:
+                running = False
+                print("You lose!")
+
 
         # Move player
         if keys[pygame.K_q]:
@@ -189,47 +241,54 @@ def main():
 
         # Move objects
         if keys[pygame.K_d]:
-                if player.x > SCREEN_WIDTH / 2:
-                    for platform in platforms:
-                        platform.x -= PLAYER_SPEED
-                    for ground in ground_platforms:
-                        ground.x -= PLAYER_SPEED
-                    for obstacle in obstacles:
-                        obstacle.x -= PLAYER_SPEED
-                else:
-                    player.x += PLAYER_SPEED
-
-        if player.y > (SCREEN_HEIGHT - player.height):
+            if player.x > SCREEN_WIDTH / 2:
+                player.isMoving = True
+                for platform in platforms:
+                    platform.x -= PLAYER_SPEED
+                for ground in ground_platforms:
+                    ground.x -= PLAYER_SPEED
+                for obstacle in obstacles:
+                    obstacle.x -= PLAYER_SPEED
+                MoveEnemy(enemies, player)
+            else:
+                player.isMoving = False
+                player.x += PLAYER_SPEED
+                MoveEnemy(enemies, player)
+        else:
+            player.isMoving = False
+            MoveEnemy(enemies, player)
+                    
+        if player.y > (SCREEN_HEIGHT - player.height * 1.5):
             running = False
             print("You lose!")
             
         # Color the screen blue
         screen.fill(SCREEN_COLOR)
 
-        # Draw the platforms and remove them if they go off screen
+        # Draw the platforms and remove them if they go off screen (plus a buffer so that enemies don't disappear too early)
         for platform in platforms:
-            if platform.x + platform.width < 0:
+            if platform.x + platform.width < -300:
                 platforms.remove(platform)
             else:
-                pygame.draw.rect(
-                    screen, platform.color, (int(platform.x), int(platform.y), int(platform.width), int(platform.height))
-                )
+                platform.draw(screen)
 
         for ground in ground_platforms:
-            if ground.x + ground.width < 0:
+            if ground.x + ground.width < -300:
                 ground_platforms.remove(ground)
             else:
-                pygame.draw.rect(
-                    screen, ground.color, (int(ground.x), int(ground.y), int(ground.width), int(ground.height))
-                )
+                ground.draw(screen)
         
         for obstacle in obstacles:
-            if obstacle.x + obstacle.width < 0:
+            if obstacle.x + obstacle.width < -300:
                 obstacles.remove(obstacle)
             else:
-                pygame.draw.rect(
-                    screen, obstacle.color, (int(obstacle.x), int(obstacle.y), int(obstacle.width), int(obstacle.height))
-                )
+                obstacle.draw(screen)
+        
+        for enemy in enemies:
+            if enemy.x + enemy.width < -300:
+                enemies.remove(enemy)
+            else:
+                enemy.draw(screen)
 
         # Draw the player
         player.draw(screen)
