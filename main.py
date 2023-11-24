@@ -65,9 +65,117 @@ def MoveEnemy(enemies, player):
             elif enemy.walking_left is False:
                 enemy.x += (enemy.speed) 
 
+# Temporary lose condition
+def CheckLoseCondition(lose):
+    if lose:
+        return True
+    return False
+
+import pygame
+from pygame.locals import *
+
+def draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
+    # Fill the screen with a blue sky color
+    screen.fill((66, 135, 245))  # Light Blue
+
+    # Draw some hills in the background
+    pygame.draw.circle(screen, (34, 139, 34), (150, 500), 100)
+    pygame.draw.circle(screen, (34, 139, 34), (300, 500), 80)
+    pygame.draw.circle(screen, (34, 139, 34), (450, 500), 120)
+
+    # Draw the ground
+    pygame.draw.rect(screen, (139, 69, 19), (0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, 50))
+
+    # Draw a simple Mario Bros-style logo
+    font = pygame.font.Font(None, 72)
+    text = font.render("Platform game", True, (255, 255, 255))
+    screen.blit(text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 4))
+
+    # Draw a prompt to press any key
+    font = pygame.font.Font(None, 36)
+    text = font.render("Press any key to start", True, (255, 255, 255))
+    screen.blit(text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2))
+
+
+def draw_lose_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font(None, 36)
+    text = font.render("You lose! Press any key to restart", True, (255, 255, 255))
+    screen.blit(text, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2))
+
 def main():
+    def reset_game():
+        # Initialize player position, velocity, and jump state
+        player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
+        player_vel_y = 0
+        onGround = False
+        isJumping = False
+        isMoving = False
+
+        player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
+
+        # Initialize enenmy states
+        walking_left = True
+
+        # Create platforms
+        platforms_data = [
+            # (x, y, width, height, color)
+            [450, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+            [2500, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+            [2800, 300, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+        ]
+
+        platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in platforms_data]
+
+        ground_platforms_data = [
+            # (x, y, width, height, color)
+            [0, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
+            [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2200, GROUND_THICKNESS, GROUND_COLOR],
+            [4400 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
+        ]
+
+        ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
+
+        #Create obstacles
+        obstacles_data = [
+            # (x, y, width, height, color)
+            # [x , SCREEN_HEIGHT-GROUND_THICKNESS-height, width, height, color]
+            [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+            [1500, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+            [1750, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
+
+            [3650, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+            [3650 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+            [3650 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+            [3650 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+
+            [4100, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+            [4100 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+            [4100 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+            [4100 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+        ]
+
+        obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
+
+        enemies_data = [
+            [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
+        ] 
+
+        enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
+
+        lose = False
+
+        return player, enemies, platforms, ground_platforms, obstacles, lose
     # Initialize Pygame
     pygame.init()
+
+    # Define game states
+    START_SCREEN = 0
+    PLAYING = 1
+    LOSE_SCREEN = 2
+
+    # Set the initial game state
+    game_state = START_SCREEN
 
     # Constants
     SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
@@ -167,141 +275,151 @@ def main():
     font = pygame.font.Font(None, 36) 
     # Game loop
     running = True
+    lose = False
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
+        
         # Get the keys currently pressed
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_ESCAPE]:
             running = False
 
-        # Handle jumping
-        if keys[pygame.K_SPACE] and player.onGround:
-            player.jumping = True
-            player.vel_y = JUMP_STRENGTH
+        if game_state == START_SCREEN:
+            # Display the starting screen and wait for a key press to start the game
+            draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
+            pygame.display.update()
 
-        if not player.onGround:
-            player.vel_y += GRAVITY
+            if any(keys):
+                game_state = PLAYING  # Transition to the playing state
 
-        if player.onGround:
-            player.jumping = False
 
-        player.y += player.vel_y 
+        elif game_state == PLAYING:
+            if CheckLoseCondition(lose):
+                game_state = START_SCREEN
+                player, enemies, platforms, ground_platforms, obstacles, lose = reset_game()
+            # Handle jumping
+            if keys[pygame.K_SPACE] and player.onGround:
+                player.jumping = True
+                player.vel_y = JUMP_STRENGTH
 
-        player.onGround = False
+            if not player.onGround:
+                player.vel_y += GRAVITY
 
-        # Check for collisions on platforms
-        for platform in platforms:
-            if not keys[pygame.K_s]:
-                if CheckCollisionPlatforms(platform, player):
-                    player.y = platform.y - player.height
+            if player.onGround:
+                player.jumping = False
+
+            player.y += player.vel_y 
+
+            player.onGround = False
+
+            # Check for collisions on platforms
+            for platform in platforms:
+                if not keys[pygame.K_s]:
+                    if CheckCollisionPlatforms(platform, player):
+                        player.y = platform.y - player.height
+                        player.onGround = True
+
+            # Check for collisions on ground
+            for ground in ground_platforms:
+                if CheckCollisionPlatforms(ground, player):
+                        player.y = ground.y - player.height
+                        player.onGround = True
+
+            # Check for collisions with obstacles and check collisions for enemies with obstacles
+            for obstacle in obstacles:
+                if CheckCollisionObstacles(obstacle, player) == "T":
+                    player.y = obstacle.y - player.height
                     player.onGround = True
 
-        # Check for collisions on ground
-        for ground in ground_platforms:
-            if CheckCollisionPlatforms(ground, player):
-                    player.y = ground.y - player.height
-                    player.onGround = True
+                elif CheckCollisionObstacles(obstacle, player) == "LW":
+                    player.x = obstacle.x - player.width 
 
-        # Check for collisions with obstacles and check collisions for enemies with obstacles
-        for obstacle in obstacles:
-            if CheckCollisionObstacles(obstacle, player) == "T":
-                player.y = obstacle.y - player.height
-                player.onGround = True
+                elif CheckCollisionObstacles(obstacle, player) == "RW":
+                    player.x = obstacle.x + obstacle.width   
 
-            elif CheckCollisionObstacles(obstacle, player) == "LW":
-                player.x = obstacle.x - player.width 
+                
+                for enemy in enemies:
+                    if CheckCollisionObstacles(obstacle, enemy) == "RW":
+                        enemy.walking_left = False
+                        enemy.x = obstacle.x + obstacle.width
+                    if CheckCollisionObstacles(obstacle, enemy) == "LW":
+                        enemy.walking_left = True
+                        enemy.x = obstacle.x - enemy.width     
 
-            elif CheckCollisionObstacles(obstacle, player) == "RW":
-                player.x = obstacle.x + obstacle.width   
-
-            
+            # Check for collisions with enemies
             for enemy in enemies:
-                if CheckCollisionObstacles(obstacle, enemy) == "RW":
-                    enemy.walking_left = False
-                    enemy.x = obstacle.x + obstacle.width
-                if CheckCollisionObstacles(obstacle, enemy) == "LW":
-                    enemy.walking_left = True
-                    enemy.x = obstacle.x - enemy.width     
-
-        # Check for collisions with enemies
-        for enemy in enemies:
-            if CheckCollisionObstacles(enemy, player) in ["T", "LW", "RW"]:
-                running = False
-                print("You lose!")
+                if CheckCollisionObstacles(enemy, player) in ["T", "LW", "RW"]:
+                    lose = True
 
 
-        # Move player
-        if keys[pygame.K_q]:
-            if player.x > 0:
-                player.x -= PLAYER_SPEED
+            # Move player
+            if keys[pygame.K_q]:
+                if player.x > 0:
+                    player.x -= PLAYER_SPEED
 
-        # Move objects
-        if keys[pygame.K_d]:
-            if player.x > SCREEN_WIDTH / 2:
-                player.isMoving = True
-                for platform in platforms:
-                    platform.x -= PLAYER_SPEED
-                for ground in ground_platforms:
-                    ground.x -= PLAYER_SPEED
-                for obstacle in obstacles:
-                    obstacle.x -= PLAYER_SPEED
-                MoveEnemy(enemies, player)
+            # Move objects
+            if keys[pygame.K_d]:
+                if player.x > SCREEN_WIDTH / 2:
+                    player.isMoving = True
+                    for platform in platforms:
+                        platform.x -= PLAYER_SPEED
+                    for ground in ground_platforms:
+                        ground.x -= PLAYER_SPEED
+                    for obstacle in obstacles:
+                        obstacle.x -= PLAYER_SPEED
+                    MoveEnemy(enemies, player)
+                else:
+                    player.isMoving = False
+                    player.x += PLAYER_SPEED
+                    MoveEnemy(enemies, player)
             else:
                 player.isMoving = False
-                player.x += PLAYER_SPEED
                 MoveEnemy(enemies, player)
-        else:
-            player.isMoving = False
-            MoveEnemy(enemies, player)
-                    
-        if player.y > (SCREEN_HEIGHT - player.height * 1.5):
-            running = False
-            print("You lose!")
+                        
+            if player.y > (SCREEN_HEIGHT - player.height * 1.5):
+                lose = True
+                
+            # Color the screen blue
+            screen.fill(SCREEN_COLOR)
+
+            # Draw the platforms and remove them if they go off screen (plus a buffer so that enemies don't disappear too early)
+            for platform in platforms:
+                if platform.x + platform.width < -300:
+                    platforms.remove(platform)
+                else:
+                    platform.draw(screen)
+
+            for ground in ground_platforms:
+                if ground.x + ground.width < -300:
+                    ground_platforms.remove(ground)
+                else:
+                    ground.draw(screen)
             
-        # Color the screen blue
-        screen.fill(SCREEN_COLOR)
+            for obstacle in obstacles:
+                if obstacle.x + obstacle.width < -300:
+                    obstacles.remove(obstacle)
+                else:
+                    obstacle.draw(screen)
+            
+            for enemy in enemies:
+                if enemy.x + enemy.width < -300:
+                    enemies.remove(enemy)
+                else:
+                    enemy.draw(screen)
 
-        # Draw the platforms and remove them if they go off screen (plus a buffer so that enemies don't disappear too early)
-        for platform in platforms:
-            if platform.x + platform.width < -300:
-                platforms.remove(platform)
-            else:
-                platform.draw(screen)
+            # Draw the player
+            player.draw(screen)
 
-        for ground in ground_platforms:
-            if ground.x + ground.width < -300:
-                ground_platforms.remove(ground)
-            else:
-                ground.draw(screen)
-        
-        for obstacle in obstacles:
-            if obstacle.x + obstacle.width < -300:
-                obstacles.remove(obstacle)
-            else:
-                obstacle.draw(screen)
-        
-        for enemy in enemies:
-            if enemy.x + enemy.width < -300:
-                enemies.remove(enemy)
-            else:
-                enemy.draw(screen)
+            # Create a text surface with the player's coordinates
+            text = font.render(f"Player: ({int(player.x)}, {int(player.y)})", True, (255, 255, 255))
 
-        # Draw the player
-        player.draw(screen)
-
-        # Create a text surface with the player's coordinates
-        text = font.render(f"Player: ({int(player.x)}, {int(player.y)})", True, (255, 255, 255))
-
-        # Blit (copy) the text surface onto the game window at the desired position (e.g., top left corner)
-        screen.blit(text, (10, 10))
-
-        # Update the display
-        pygame.display.update()
-
+            # Blit (copy) the text surface onto the game window at the desired position (e.g., top left corner)
+            screen.blit(text, (10, 10))
+            pygame.display.update()
+                
     # Quit Pygame
     pygame.quit()
     sys.exit()
