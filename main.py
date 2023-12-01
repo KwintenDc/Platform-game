@@ -32,7 +32,44 @@ class Enemies(GameObject):
         super().__init__(x, y, width, height, color)
         self.speed = speed
         self.walking_left = walking_left
-                
+
+# Define game states
+START_SCREEN = 0
+PLAYING = 1
+
+# Constants
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_COLOR = (66, 135, 245)  # Lightblue
+
+COLOR_WHITE = (255, 255, 255)  
+COLOR_BLACK = (0, 0, 0)  
+COLOR_GRAY = (128, 128, 128)  
+COLOR_RED = (255, 0, 0)
+COLOR_GREEN = (34, 139, 34) 
+COLOR_BLUE = (0, 0, 255)  
+COLOR_YELLOW = (255, 255, 0) 
+COLOR_MAGENTA = (255, 0, 255) 
+COLOR_CYAN = (0, 255, 255)
+COLOR_BROWN = (231, 90, 16)
+COLOR_DARK_BROWN = (69, 17, 0)
+
+PLAYER_HEIGHT = 65
+PLAYER_WIDTH = PLAYER_HEIGHT / 2
+PLAYER_COLOR = COLOR_BLUE
+PLAYER_SPEED = 0.25
+
+ENEMY_HEIGHT = 30
+ENEMY_WIDTH = 30
+ENEMY_COLOR = COLOR_RED
+ENEMY_SPEED = 0.10 
+
+PLATFORM_THICKNESS = 40
+
+GROUND_COLOR = COLOR_GREEN
+GROUND_THICKNESS = 50
+GRAVITY = 0.0008            # Acceleration due to gravity
+JUMP_STRENGTH = -0.5        # Negative because y-axis is flipped
+              
 def CheckCollisionPlatforms(platform, player): 
     if player.x < platform.x + platform.width and player.x > platform.x - player.width:
         if player.y + player.height > platform.y and player.y + player.height < platform.y + 1:
@@ -71,17 +108,13 @@ def CheckLoseCondition(lose):
         return True
     return False
 
-import pygame
-from pygame.locals import *
-
 def draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
-    # Fill the screen with a blue sky color
-    screen.fill((66, 135, 245))  # Light Blue
+    screen.fill(SCREEN_COLOR)  # Light Blue
 
     # Draw some hills in the background
-    pygame.draw.circle(screen, (34, 139, 34), (150, 500), 100)
-    pygame.draw.circle(screen, (34, 139, 34), (300, 500), 80)
-    pygame.draw.circle(screen, (34, 139, 34), (450, 500), 120)
+    pygame.draw.circle(screen, COLOR_GREEN, (150, 500), 100)
+    pygame.draw.circle(screen, COLOR_GREEN, (300, 500), 80)
+    pygame.draw.circle(screen, COLOR_GREEN, (450, 500), 120)
 
     # Draw the ground
     pygame.draw.rect(screen, (139, 69, 19), (0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, 50))
@@ -89,126 +122,94 @@ def draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
     # Draw a simple Mario Bros-style logo
     font = pygame.font.Font(None, 72)
     text = font.render("Platform game", True, (255, 255, 255))
-    screen.blit(text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 4))
+
+    # Calculate the width of the text surface
+    text_width = text.get_width()
+
+    # Center the text on the x-axis
+    text_x = SCREEN_WIDTH // 2 - text_width // 2
+    text_y = SCREEN_HEIGHT // 4
+
+    screen.blit(text, (text_x, text_y))
 
     # Draw a prompt to press any key
     font = pygame.font.Font(None, 36)
-    text = font.render("Press any key to start", True, (255, 255, 255))
-    screen.blit(text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2))
+    text = font.render("Press Enter to start", True, (255, 255, 255))
+    # Calculate the width of the text surface
+    text_width = text.get_width()
 
+    # Center the text on the x-axis
+    text_x = SCREEN_WIDTH // 2 - text_width // 2
+    text_y = SCREEN_HEIGHT // 2
 
-def draw_lose_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
-    screen.fill((0, 0, 0))
-    font = pygame.font.Font(None, 36)
-    text = font.render("You lose! Press any key to restart", True, (255, 255, 255))
-    screen.blit(text, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2))
+    screen.blit(text, (text_x, text_y))
 
+def reset_game():
+    # Initialize player position, velocity, and jump state
+    player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
+    player_vel_y = 0
+    onGround = False
+    isJumping = False
+    isMoving = False
+
+    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
+
+    # Create platforms
+    platforms_data = [
+        # (x, y, width, height, color)
+        [450, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+        [2500, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+        [2800, 300, 200, PLATFORM_THICKNESS, COLOR_BROWN],
+    ]
+
+    platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in platforms_data]
+
+    ground_platforms_data = [
+        # (x, y, width, height, color)
+        [0, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
+        [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2200, GROUND_THICKNESS, GROUND_COLOR],
+        [4400 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
+    ]
+
+    ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
+
+    #Create obstacles
+    obstacles_data = [
+        # (x, y, width, height, color)
+        # [x , SCREEN_HEIGHT-GROUND_THICKNESS-height, width, height, color]
+        [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+        [1500, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
+        [1750, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
+
+        [3650, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+        [3650 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [3650 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [3650 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+
+        [4100, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
+        [4100 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
+        [4100 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
+        [4100 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
+    ]
+
+    obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
+
+    enemies_data = [
+        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
+    ] 
+
+    enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
+
+    lose = False
+
+    return player, enemies, platforms, ground_platforms, obstacles, lose
 def main():
-    def reset_game():
-        # Initialize player position, velocity, and jump state
-        player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
-        player_vel_y = 0
-        onGround = False
-        isJumping = False
-        isMoving = False
-
-        player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
-
-        # Initialize enenmy states
-        walking_left = True
-
-        # Create platforms
-        platforms_data = [
-            # (x, y, width, height, color)
-            [450, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
-            [2500, 400, 200, PLATFORM_THICKNESS, COLOR_BROWN],
-            [2800, 300, 200, PLATFORM_THICKNESS, COLOR_BROWN],
-        ]
-
-        platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in platforms_data]
-
-        ground_platforms_data = [
-            # (x, y, width, height, color)
-            [0, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
-            [2000 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2200, GROUND_THICKNESS, GROUND_COLOR],
-            [4400 + 200, SCREEN_HEIGHT - GROUND_THICKNESS, 2000, GROUND_THICKNESS, GROUND_COLOR],
-        ]
-
-        ground_platforms = [Platform(x, y, width, height, color) for x, y, width, height, color in ground_platforms_data]
-
-        #Create obstacles
-        obstacles_data = [
-            # (x, y, width, height, color)
-            # [x , SCREEN_HEIGHT-GROUND_THICKNESS-height, width, height, color]
-            [1000, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
-            [1500, SCREEN_HEIGHT-GROUND_THICKNESS-150, 75, 150, COLOR_GRAY],
-            [1750, SCREEN_HEIGHT-GROUND_THICKNESS-250, 75, 250, COLOR_GRAY],
-
-            [3650, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
-            [3650 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
-            [3650 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
-            [3650 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
-
-            [4100, SCREEN_HEIGHT-GROUND_THICKNESS-140, 75, 140, COLOR_DARK_BROWN],
-            [4100 + 75, SCREEN_HEIGHT-GROUND_THICKNESS-105, 75, 105, COLOR_DARK_BROWN],
-            [4100 + 75 * 2, SCREEN_HEIGHT-GROUND_THICKNESS-70, 75, 70, COLOR_DARK_BROWN],
-            [4100 + 75 * 3, SCREEN_HEIGHT-GROUND_THICKNESS-35, 75, 35, COLOR_DARK_BROWN],
-        ]
-
-        obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
-
-        enemies_data = [
-            [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
-        ] 
-
-        enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
-
-        lose = False
-
-        return player, enemies, platforms, ground_platforms, obstacles, lose
+    
     # Initialize Pygame
     pygame.init()
 
-    # Define game states
-    START_SCREEN = 0
-    PLAYING = 1
-    LOSE_SCREEN = 2
-
     # Set the initial game state
     game_state = START_SCREEN
-
-    # Constants
-    SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
-    SCREEN_COLOR = (35, 170, 200)  # Lightblue
-
-    COLOR_WHITE = (255, 255, 255)  
-    COLOR_BLACK = (0, 0, 0)  
-    COLOR_GRAY = (128, 128, 128)  
-    COLOR_RED = (255, 0, 0)
-    COLOR_GREEN = (0, 255, 0) 
-    COLOR_BLUE = (0, 0, 255)  
-    COLOR_YELLOW = (255, 255, 0) 
-    COLOR_MAGENTA = (255, 0, 255) 
-    COLOR_CYAN = (0, 255, 255)
-    COLOR_BROWN = (231, 90, 16)
-    COLOR_DARK_BROWN = (69, 17, 0)
-
-    PLAYER_HEIGHT = 65
-    PLAYER_WIDTH = PLAYER_HEIGHT / 2
-    PLAYER_COLOR = COLOR_BLUE
-    PLAYER_SPEED = 0.25
-
-    ENEMY_HEIGHT = 30
-    ENEMY_WIDTH = 30
-    ENEMY_COLOR = COLOR_RED
-    ENEMY_SPEED = 0.10 
-
-    PLATFORM_THICKNESS = 40
-
-    GROUND_COLOR = COLOR_GREEN
-    GROUND_THICKNESS = 50
-    GRAVITY = 0.0008            # Acceleration due to gravity
-    JUMP_STRENGTH = -0.5        # Negative because y-axis is flipped
 
     # Create the screen
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -292,10 +293,10 @@ def main():
             draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
             pygame.display.update()
 
-            if any(keys):
+            if keys[pygame.K_KP_ENTER]:
                 game_state = PLAYING  # Transition to the playing state
 
-
+        # Game logic
         elif game_state == PLAYING:
             if CheckLoseCondition(lose):
                 game_state = START_SCREEN
@@ -413,11 +414,6 @@ def main():
             # Draw the player
             player.draw(screen)
 
-            # Create a text surface with the player's coordinates
-            text = font.render(f"Player: ({int(player.x)}, {int(player.y)})", True, (255, 255, 255))
-
-            # Blit (copy) the text surface onto the game window at the desired position (e.g., top left corner)
-            screen.blit(text, (10, 10))
             pygame.display.update()
                 
     # Quit Pygame
