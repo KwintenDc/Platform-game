@@ -11,13 +11,66 @@ class GameObject:
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 class Player(GameObject):
-    def __init__(self, x, y, width, height, color, vel_y, speed, onGround, isJumping, isMoving):
-        super().__init__(x, y, width, height, color)
+    def __init__(self, x, y, width, height, sprite_sheet_path, vel_y, speed, onGround, isJumping, MovingDirection):
+        self.x, self.y = x, y
         self.vel_y = vel_y
+        self.width, self.height = width, height
         self.speed = speed
         self.onGround = onGround
         self.isJumping = isJumping
-        self.isMoving = isMoving
+        self.MovingDirection = MovingDirection
+        self.sprite_sheet = pygame.image.load(sprite_sheet_path)
+        self.previous_direction = "RIGHT"
+        self.animationtimer = 0
+
+        self.left_small_walking_frames = []
+        self.left_small_standing_frames = []
+        self.right_small_walking_frames = []
+        self.right_small_standing_frames = []
+        self.left_small_jumping_frames = []
+        self.right_small_jumping_frames = []
+
+        self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(89.5, 0, 15.5, 15.5), (self.width, self.height)))
+        self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(121, 0, 15.5, 15.5), (self.width, self.height)))
+        self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(150, 0, 15.5, 15.5), (self.width, self.height)))
+
+        self.left_small_standing_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(181, 0, 15.5, 15.5), (self.width, self.height)))
+
+        self.right_small_standing_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(210, 0, 15.5, 15.5), (self.width, self.height)))
+
+        self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(240, 0, 15.5, 15.5), (self.width, self.height)))
+        self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(270, 0, 15.5, 15.5), (self.width, self.height)))
+        self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(300, 0, 15.5, 15.5), (self.width, self.height)))
+
+        # TODO: Add jumping frames
+        self.left_small_jumping_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(29, 1, 15.5, 15.5), (self.width, self.height)))
+
+        self.right_small_jumping_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(361, 1, 15.5, 15.5), (self.width, self.height)))
+
+    def draw(self, screen):
+        if(self.MovingDirection == "STANDING"):
+            if(self.previous_direction == "LEFT"):
+                frame = self.left_small_standing_frames[0]
+                if(self.isJumping):
+                    frame = self.left_small_jumping_frames[0]
+            elif(self.previous_direction == "RIGHT"):
+                frame = self.right_small_standing_frames[0]
+                if(self.isJumping):
+                    frame = self.right_small_jumping_frames[0]
+
+        elif(self.MovingDirection == "LEFT"):
+            self.previous_direction = "LEFT"
+            frame = self.left_small_walking_frames[0]
+            if(self.isJumping):
+                frame = self.left_small_jumping_frames[0]
+
+        elif(self.MovingDirection == "RIGHT"):
+            frame = self.right_small_walking_frames[2]
+            self.previous_direction = "RIGHT"
+            if(self.isJumping):
+                frame = self.right_small_jumping_frames[0]
+                
+        screen.blit(frame, (self.x, self.y))
 
 class Platform(GameObject):
     def __init__(self, x, y, width, height, color):
@@ -38,7 +91,7 @@ START_SCREEN = 0
 PLAYING = 1
 
 # Constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600     
 SCREEN_COLOR = (66, 135, 245)  # Lightblue
 
 COLOR_WHITE = (255, 255, 255)  
@@ -54,9 +107,12 @@ COLOR_BROWN = (231, 90, 16)
 COLOR_DARK_BROWN = (69, 17, 0)
 
 PLAYER_HEIGHT = 65
-PLAYER_WIDTH = PLAYER_HEIGHT / 2
+PLAYER_WIDTH = 45
 PLAYER_COLOR = COLOR_BLUE
 PLAYER_SPEED = 0.25
+PLAYER_SPRITE_SHEET_PATH = "smb_mario_sheet.png"
+NUM_FRAMES_WALK = 3  
+NUM_FRAMES_JUMP = 4  
 
 ENEMY_HEIGHT = 30
 ENEMY_WIDTH = 30
@@ -88,21 +144,31 @@ def CheckCollisionObstacles(obstacle, player):
             return "RW"
     return False
 
-def MoveEnemy(enemies, player):
-    if player.isMoving is True:
-        for enemy in enemies:
-            if enemy.walking_left is True:
-                enemy.x -= (player.speed + enemy.speed)
-            elif enemy.walking_left is False:
-                enemy.x += (enemy.speed - player.speed)
-    else: 
-        for enemy in enemies:
-            if enemy.walking_left is True:
+def MoveEnemy(enemies, player, obstacles):
+    for enemy in enemies:
+        if player.MovingDirection == "RIGHT":
+            if enemy.walking_left == True:
+                if player.x < SCREEN_WIDTH / 2:
+                    enemy.x -= enemy.speed
+                else: 
+                    enemy.x -= (enemy.speed + player.speed)
+            elif enemy.walking_left == False:
+                if player.x < SCREEN_WIDTH / 2:
+                    enemy.x += enemy.speed
+                else:
+                    enemy.x += enemy.speed - player.speed
+        elif player.MovingDirection == "LEFT":
+            if enemy.walking_left == True:
                 enemy.x -= (enemy.speed)
             elif enemy.walking_left is False:
                 enemy.x += (enemy.speed) 
+        else: 
+            if enemy.walking_left == True:
+                enemy.x -= enemy.speed
+            elif enemy.walking_left is False:
+                enemy.x += enemy.speed
 
-# Temporary lose condition
+# TODO : Add more to lose condition
 def CheckLoseCondition(lose):
     if lose:
         return True
@@ -150,9 +216,9 @@ def reset_game():
     player_vel_y = 0
     onGround = False
     isJumping = False
-    isMoving = False
+    movingDirection = "STANDING"
 
-    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
+    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
 
     # Create platforms
     platforms_data = [
@@ -208,6 +274,9 @@ def main():
     # Initialize Pygame
     pygame.init()
 
+    # Initialize the clock 
+    clock = pygame.time.Clock()
+
     # Set the initial game state
     game_state = START_SCREEN
 
@@ -220,9 +289,9 @@ def main():
     player_vel_y = 0
     onGround = False
     isJumping = False
-    isMoving = False
+    movingDirection = "STANDING"
 
-    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_COLOR, player_vel_y, PLAYER_SPEED, onGround, isJumping, isMoving)
+    player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
 
     # Initialize enenmy states
     walking_left = True
@@ -303,14 +372,15 @@ def main():
                 player, enemies, platforms, ground_platforms, obstacles, lose = reset_game()
             # Handle jumping
             if keys[pygame.K_SPACE] and player.onGround:
-                player.jumping = True
+                player.isJumping = True
                 player.vel_y = JUMP_STRENGTH
+                player.onGround = False
 
             if not player.onGround:
                 player.vel_y += GRAVITY
 
             if player.onGround:
-                player.jumping = False
+                player.isJumping = False
 
             player.y += player.vel_y 
 
@@ -355,30 +425,31 @@ def main():
                 if CheckCollisionObstacles(enemy, player) in ["T", "LW", "RW"]:
                     lose = True
 
-
             # Move player
             if keys[pygame.K_q]:
+                player.MovingDirection = "LEFT"
                 if player.x > 0:
                     player.x -= PLAYER_SPEED
+                    MoveEnemy(enemies, player, obstacles)
 
             # Move objects
             if keys[pygame.K_d]:
+                player.MovingDirection = "RIGHT"
                 if player.x > SCREEN_WIDTH / 2:
-                    player.isMoving = True
                     for platform in platforms:
                         platform.x -= PLAYER_SPEED
                     for ground in ground_platforms:
                         ground.x -= PLAYER_SPEED
                     for obstacle in obstacles:
                         obstacle.x -= PLAYER_SPEED
-                    MoveEnemy(enemies, player)
+                    MoveEnemy(enemies, player, obstacles)
                 else:
-                    player.isMoving = False
                     player.x += PLAYER_SPEED
-                    MoveEnemy(enemies, player)
-            else:
-                player.isMoving = False
-                MoveEnemy(enemies, player)
+                    MoveEnemy(enemies, player, obstacles)
+            
+            if not keys[pygame.K_d] and not keys[pygame.K_q]:
+                player.MovingDirection = "STANDING"
+                MoveEnemy(enemies, player, obstacles)
                         
             if player.y > (SCREEN_HEIGHT - player.height * 1.5):
                 lose = True
@@ -413,7 +484,13 @@ def main():
 
             # Draw the player
             player.draw(screen)
+            
+            # # Put the coordinates of the player on the screen
+            # text = font.render("x: " + str(player.x) + " y: " + str(player.y), True, (255, 255, 255))
+            # screen.blit(text, (0, 0))
 
+            # Tick the clock and update the display (standard 2000)
+            clock.tick(4000) 
             pygame.display.update()
                 
     # Quit Pygame
