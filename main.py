@@ -42,7 +42,6 @@ class Player(GameObject):
         self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(270, 0, 15.5, 15.5), (self.width, self.height)))
         self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(300, 0, 15.5, 15.5), (self.width, self.height)))
 
-        # TODO: Add jumping frames
         self.left_small_jumping_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(29, 1, 15.5, 15.5), (self.width, self.height)))
 
         self.right_small_jumping_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(361, 1, 15.5, 15.5), (self.width, self.height)))
@@ -144,28 +143,29 @@ def CheckCollisionObstacles(obstacle, player):
             return "RW"
     return False
 
-def MoveEnemy(enemies, player, obstacles):
+def MoveEnemy(enemies, player, objectsMoving):
     for enemy in enemies:
         if player.MovingDirection == "RIGHT":
             if enemy.walking_left == True:
                 if player.x < SCREEN_WIDTH / 2:
                     enemy.x -= enemy.speed
                 else: 
-                    enemy.x -= (enemy.speed + player.speed)
+                    if objectsMoving:
+                        enemy.x -= (enemy.speed + player.speed)
+                    else:
+                        enemy.x -= enemy.speed
             elif enemy.walking_left == False:
                 if player.x < SCREEN_WIDTH / 2:
                     enemy.x += enemy.speed
                 else:
-                    enemy.x += enemy.speed - player.speed
-        elif player.MovingDirection == "LEFT":
-            if enemy.walking_left == True:
-                enemy.x -= (enemy.speed)
-            elif enemy.walking_left is False:
-                enemy.x += (enemy.speed) 
+                    if objectsMoving:
+                        enemy.x += enemy.speed - player.speed
+                    else:
+                        enemy.x += enemy.speed
         else: 
             if enemy.walking_left == True:
                 enemy.x -= enemy.speed
-            elif enemy.walking_left is False:
+            elif enemy.walking_left == False:
                 enemy.x += enemy.speed
 
 # TODO : Add more to lose condition
@@ -217,6 +217,7 @@ def reset_game():
     onGround = False
     isJumping = False
     movingDirection = "STANDING"
+    objectsMoving = False
 
     player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
 
@@ -268,7 +269,7 @@ def reset_game():
 
     lose = False
 
-    return player, enemies, platforms, ground_platforms, obstacles, lose
+    return player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving
 def main():
     
     # Initialize Pygame
@@ -290,6 +291,7 @@ def main():
     onGround = False
     isJumping = False
     movingDirection = "STANDING"
+    objectsMoving = False
 
     player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
 
@@ -342,7 +344,6 @@ def main():
 
     enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
 
-    font = pygame.font.Font(None, 36) 
     # Game loop
     running = True
     lose = False
@@ -369,7 +370,7 @@ def main():
         elif game_state == PLAYING:
             if CheckLoseCondition(lose):
                 game_state = START_SCREEN
-                player, enemies, platforms, ground_platforms, obstacles, lose = reset_game()
+                player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving = reset_game()
             # Handle jumping
             if keys[pygame.K_SPACE] and player.onGround:
                 player.isJumping = True
@@ -430,26 +431,28 @@ def main():
                 player.MovingDirection = "LEFT"
                 if player.x > 0:
                     player.x -= PLAYER_SPEED
-                    MoveEnemy(enemies, player, obstacles)
+                    MoveEnemy(enemies, player, objectsMoving)
 
             # Move objects
             if keys[pygame.K_d]:
                 player.MovingDirection = "RIGHT"
                 if player.x > SCREEN_WIDTH / 2:
+                    objectsMoving = True
                     for platform in platforms:
                         platform.x -= PLAYER_SPEED
                     for ground in ground_platforms:
                         ground.x -= PLAYER_SPEED
                     for obstacle in obstacles:
                         obstacle.x -= PLAYER_SPEED
-                    MoveEnemy(enemies, player, obstacles)
+                    MoveEnemy(enemies, player, objectsMoving)
                 else:
                     player.x += PLAYER_SPEED
-                    MoveEnemy(enemies, player, obstacles)
+                    objectsMoving = False
+                    MoveEnemy(enemies, player, objectsMoving)
             
             if not keys[pygame.K_d] and not keys[pygame.K_q]:
                 player.MovingDirection = "STANDING"
-                MoveEnemy(enemies, player, obstacles)
+                MoveEnemy(enemies, player, objectsMoving)
                         
             if player.y > (SCREEN_HEIGHT - player.height * 1.5):
                 lose = True
@@ -486,6 +489,7 @@ def main():
             player.draw(screen)
             
             # # Put the coordinates of the player on the screen
+            # font = pygame.font.Font(None, 36) 
             # text = font.render("x: " + str(player.x) + " y: " + str(player.y), True, (255, 255, 255))
             # screen.blit(text, (0, 0))
 
