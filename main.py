@@ -80,10 +80,27 @@ class Obstacles(GameObject):
         super().__init__(x, y, width, height, color)
 
 class Enemies(GameObject):
-    def __init__(self, x, y, width, height, color, speed, walking_left):
+    def __init__(self, x, y, width, height, color, speed, walking_left, sprite_sheet_path):
         super().__init__(x, y, width, height, color)
         self.speed = speed
         self.walking_left = walking_left
+        self.sprite_sheet = pygame.image.load(sprite_sheet_path)
+        self.previous_direction = "RIGHT"
+
+        self.left_walking_frames = []
+        self.right_walking_frames = []
+
+        self.left_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(149.5, 119, 18, 25), (self.width, self.height)))
+
+        self.right_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(179, 119, 18, 25), (self.width, self.height)))
+
+    def draw(self, screen):
+        if(self.walking_left == True):
+            frame = self.left_walking_frames[0]
+        elif(self.walking_left == False):
+            frame = self.right_walking_frames[0]
+        screen.blit(frame, (self.x, self.y))
+        
 
 # Define game states
 START_SCREEN = 0
@@ -107,16 +124,14 @@ COLOR_DARK_BROWN = (69, 17, 0)
 
 PLAYER_HEIGHT = 65
 PLAYER_WIDTH = 45
-PLAYER_COLOR = COLOR_BLUE
 PLAYER_SPEED = 0.25
-PLAYER_SPRITE_SHEET_PATH = "smb_mario_sheet.png"
-NUM_FRAMES_WALK = 3  
-NUM_FRAMES_JUMP = 4  
+PLAYER_SPRITE_SHEET_PATH = "smb_mario_sheet.png" 
 
-ENEMY_HEIGHT = 30
+ENEMY_HEIGHT = 45
 ENEMY_WIDTH = 30
 ENEMY_COLOR = COLOR_RED
 ENEMY_SPEED = 0.10 
+ENEMIES_SPRITE_SHEET_PATH = "smb_enemies_sheet.png"
 
 PLATFORM_THICKNESS = 40
 
@@ -262,10 +277,10 @@ def reset_game():
     obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
 
     enemies_data = [
-        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
+        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True, ENEMIES_SPRITE_SHEET_PATH]
     ] 
 
-    enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
+    enemies = [Enemies(x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH) for x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH in enemies_data]
 
     lose = False
 
@@ -339,10 +354,10 @@ def main():
     obstacles = [Obstacles(x, y, width, height, color) for x, y, width, height, color in obstacles_data]
 
     enemies_data = [
-        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True]
+        [1500 - ENEMY_WIDTH, SCREEN_HEIGHT-GROUND_THICKNESS - ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_COLOR, ENEMY_SPEED, True, ENEMIES_SPRITE_SHEET_PATH]
     ] 
 
-    enemies = [Enemies(x, y, width, height, color, speed, walking_left) for x, y, width, height, color, speed, walking_left in enemies_data]
+    enemies = [Enemies(x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH) for x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH in enemies_data]
 
     # Game loop
     running = True
