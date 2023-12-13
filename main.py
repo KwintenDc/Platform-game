@@ -1,6 +1,8 @@
 import pygame
 from pygame.locals import *
 import sys
+from datetime import datetime
+import csv
 
 class GameObject:
     def __init__(self, x, y, width, height, color):
@@ -21,7 +23,7 @@ class Player(GameObject):
         self.MovingDirection = MovingDirection
         self.sprite_sheet = pygame.image.load(sprite_sheet_path)
         self.previous_direction = "RIGHT"
-        self.animationtimer = 0
+        self.score = 3000
 
         self.left_small_walking_frames = []
         self.left_small_standing_frames = []
@@ -163,7 +165,60 @@ GROUND_COLOR = COLOR_GREEN
 GROUND_THICKNESS = 50
 GRAVITY = 0.0008            # Acceleration due to gravity
 JUMP_STRENGTH = -0.5        # Negative because y-axis is flipped
-              
+
+# Set up CSV file
+csv_file_path = "statistics.csv"
+csv_header = ["Date", "Time Played (seconds)"]
+
+
+import csv
+
+def get_best_time(csv_file_path):
+    best_time = float('inf')  # Initialize with positive infinity
+
+    try:
+        with open(csv_file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip the header row
+
+            for row in csv_reader:
+                if len(row) == 2:
+                    _, time_played_str = row
+                    try:
+                        time_played = float(time_played_str)
+                        best_time = min(best_time, time_played)
+                    except ValueError:
+                        print(f"Error converting '{time_played_str}' to float.")
+
+    except FileNotFoundError:
+        print(f"CSV file '{csv_file_path}' not found.")
+
+    if best_time == float('inf'):
+        print("No valid times found in the CSV file.")
+        return None
+
+    return best_time
+
+def get_last_time_played(csv_file_path):
+    try:
+        with open(csv_file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip the header row
+            rows = list(csv_reader)
+            if rows and len(rows[-1]) == 2:
+                date_str, time_played_str = rows[-1]
+                try:
+                    time_played = float(time_played_str)
+                    return time_played
+                except (ValueError, TypeError) as e:
+                    print(f"Error processing row: {e}")
+
+    except FileNotFoundError:
+        print(f"CSV file '{csv_file_path}' not found.")
+
+    return None
+
+
 def CheckCollisionPlatforms(platform, player): 
     if player.x < platform.x + platform.width and player.x > platform.x - player.width:
         if player.y + player.height > platform.y and player.y + player.height < platform.y + 1:
@@ -201,7 +256,6 @@ def MoveEnemy(enemies, player, objectsMoving):
             elif enemy.walking_left == False:
                 enemy.x += enemy.speed
 
-# TODO : Add more to lose condition
 def CheckLoseCondition(lose):
     if lose:
         return True
@@ -243,6 +297,23 @@ def draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
 
     screen.blit(text, (text_x, text_y))
 
+    # Get the last time played
+    best_time = get_best_time(csv_file_path)
+
+    # Display the last time played on the screen
+    font_size = 24
+    font = pygame.font.Font(None, font_size)
+    best_time_text = f"Best time: {best_time:.2f} seconds"
+    best_time_rendered = font.render(best_time_text, True, (255, 255, 255))
+    screen.blit(best_time_rendered, (10, 10))
+
+    last_time = get_last_time_played(csv_file_path)
+
+    last_time_text = f"Last time: {last_time:.2f} seconds"
+    last_time_rendered = font.render(last_time_text, True, (255, 255, 255))
+    screen.blit(last_time_rendered, (10, 40))
+
+
 def reset_game():
     # Initialize player position, velocity, and jump state
     player_x, player_y = 400 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - GROUND_THICKNESS - PLAYER_HEIGHT
@@ -253,7 +324,7 @@ def reset_game():
     objectsMoving = False
 
     player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
-
+    player.score = 3000
     # Create platforms
     platforms_data = [
         # (x, y, width, height, color)
@@ -308,6 +379,8 @@ def reset_game():
     lose = False
 
     return player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving
+
+
 def main():
     
     # Initialize Pygame
@@ -327,6 +400,10 @@ def main():
     # Game loop
     running = True
     lose = False
+
+    # Get the current date and time
+    start_time = datetime.now()
+    
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -351,7 +428,16 @@ def main():
             if CheckLoseCondition(lose):
                 game_state = START_SCREEN
                 player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving = reset_game()
-            # Handle jumping
+
+                end_time = datetime.now()
+                print("You survived for " + str((end_time - start_time).total_seconds()) + " seconds")
+
+                # TODO: Place this at win condition
+                # Append date and time played to CSV file
+                with open(csv_file_path, mode='a', newline='') as csv_file:
+                    csv_writer = csv.writer(csv_file)
+                    csv_writer.writerow([end_time.strftime("%Y-%m-%d %H:%M:%S"), (end_time - start_time).total_seconds()])
+
             if keys[pygame.K_SPACE] and player.onGround:
                 player.isJumping = True
                 player.vel_y = JUMP_STRENGTH
@@ -467,14 +553,9 @@ def main():
 
             # Draw the player
             player.draw(screen)
-            
-            # # Put the coordinates of the player on the screen
-            # font = pygame.font.Font(None, 36) 
-            # text = font.render("x: " + str(player.x) + " y: " + str(player.y), True, (255, 255, 255))
-            # screen.blit(text, (0, 0))
 
             # Tick the clock and update the display (standard 2000)
-            clock.tick(4000) 
+            clock.tick(2000) 
             pygame.display.update()
                 
     # Quit Pygame
