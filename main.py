@@ -88,9 +88,9 @@ class Obstacles(GameObject):
 
         self.pipe_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(230, 390, 32, 50), (self.width, self.height)))
 
-        self.castle_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(247, 865, 80, 70), (self.width, self.height)))
-
         self.flag_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(250, 593, 22, 170), (self.width, self.height)))
+
+        self.castle_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(247, 865, 80, 70), (self.width, self.height)))
     
     def draw(self, screen):
         if(self.obstacleType == "PIPE"):
@@ -194,8 +194,7 @@ def get_best_time(csv_file_path):
         print(f"CSV file '{csv_file_path}' not found.")
 
     if best_time == float('inf'):
-        print("No valid times found in the CSV file.")
-        return None
+        return 0.0
 
     return best_time
 
@@ -216,7 +215,7 @@ def get_last_time_played(csv_file_path):
     except FileNotFoundError:
         print(f"CSV file '{csv_file_path}' not found.")
 
-    return None
+    return 0.0
 
 
 def CheckCollisionPlatforms(platform, player): 
@@ -377,8 +376,9 @@ def reset_game():
     enemies = [Enemies(x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH) for x, y, width, height, color, speed, walking_left, ENEMIES_SPRITE_SHEET_PATH in enemies_data]
 
     lose = False
+    win = False
 
-    return player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving
+    return player, enemies, platforms, ground_platforms, obstacles, lose, win, objectsMoving
 
 
 def main():
@@ -396,7 +396,7 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Platform Game")
 
-    player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving = reset_game()
+    player, enemies, platforms, ground_platforms, obstacles, lose, win, objectsMoving = reset_game()
     # Game loop
     running = True
     lose = False
@@ -425,18 +425,18 @@ def main():
 
         # Game logic
         elif game_state == PLAYING:
-            if CheckLoseCondition(lose):
-                game_state = START_SCREEN
-                player, enemies, platforms, ground_platforms, obstacles, lose, objectsMoving = reset_game()
-
+            if CheckLoseCondition(lose) or win:
                 end_time = datetime.now()
                 print("You survived for " + str((end_time - start_time).total_seconds()) + " seconds")
 
-                # TODO: Place this at win condition
                 # Append date and time played to CSV file
-                with open(csv_file_path, mode='a', newline='') as csv_file:
-                    csv_writer = csv.writer(csv_file)
-                    csv_writer.writerow([end_time.strftime("%Y-%m-%d %H:%M:%S"), (end_time - start_time).total_seconds()])
+                if win:
+                    with open(csv_file_path, mode='a', newline='') as csv_file:
+                        csv_writer = csv.writer(csv_file)
+                        csv_writer.writerow([end_time.strftime("%Y-%m-%d %H:%M:%S"), (end_time - start_time).total_seconds()])
+                
+                game_state = START_SCREEN
+                player, enemies, platforms, ground_platforms, obstacles, lose, win, objectsMoving = reset_game()
 
             if keys[pygame.K_SPACE] and player.onGround:
                 player.isJumping = True
@@ -469,13 +469,19 @@ def main():
             # Check for collisions with obstacles and check collisions for enemies with obstacles
             for obstacle in obstacles:
                 if CheckCollisionObstacles(obstacle, player) == "T":
+                    if obstacle.obstacleType == "FLAG":
+                        win = True
                     player.y = obstacle.y - player.height
                     player.onGround = True
 
                 elif CheckCollisionObstacles(obstacle, player) == "LW":
+                    if obstacle.obstacleType == "FLAG":
+                        win = True
                     player.x = obstacle.x - player.width 
 
                 elif CheckCollisionObstacles(obstacle, player) == "RW":
+                    if obstacle.obstacleType == "FLAG":
+                        win = True
                     player.x = obstacle.x + obstacle.width   
 
                 
