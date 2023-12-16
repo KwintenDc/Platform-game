@@ -23,7 +23,6 @@ class Player(GameObject):
         self.MovingDirection = MovingDirection
         self.sprite_sheet = pygame.image.load(sprite_sheet_path)
         self.previous_direction = "RIGHT"
-        self.score = 3000
 
         self.left_small_walking_frames = []
         self.left_small_standing_frames = []
@@ -32,6 +31,7 @@ class Player(GameObject):
         self.left_small_jumping_frames = []
         self.right_small_jumping_frames = []
 
+        # Multiple frames for animation (not in use yet)
         self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(89.5, 0, 15.5, 15.5), (self.width, self.height)))
         self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(121, 0, 15.5, 15.5), (self.width, self.height)))
         self.left_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(150, 0, 15.5, 15.5), (self.width, self.height)))
@@ -40,6 +40,7 @@ class Player(GameObject):
 
         self.right_small_standing_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(210, 0, 15.5, 15.5), (self.width, self.height)))
 
+        # Multiple frames for animation (not in use yet)
         self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(240, 0, 15.5, 15.5), (self.width, self.height)))
         self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(270, 0, 15.5, 15.5), (self.width, self.height)))
         self.right_small_walking_frames.append(pygame.transform.scale(self.sprite_sheet.subsurface(300, 0, 15.5, 15.5), (self.width, self.height)))
@@ -174,12 +175,12 @@ csv_header = ["Date", "Time Played (seconds)"]
 import csv
 
 def get_best_time(csv_file_path):
-    best_time = float('inf')  # Initialize with positive infinity
+    best_time = float('inf')  
 
     try:
         with open(csv_file_path, mode='r') as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  # Skip the header row
+            next(csv_reader)  
 
             for row in csv_reader:
                 if len(row) == 2:
@@ -202,7 +203,7 @@ def get_last_time_played(csv_file_path):
     try:
         with open(csv_file_path, mode='r') as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  # Skip the header row
+            next(csv_reader)  
             rows = list(csv_reader)
             if rows and len(rows[-1]) == 2:
                 date_str, time_played_str = rows[-1]
@@ -296,18 +297,20 @@ def draw_start_screen(screen, SCREEN_WIDTH, SCREEN_HEIGHT):
 
     screen.blit(text, (text_x, text_y))
 
-    # Get the last time played
+    # Get the best time played
     best_time = get_best_time(csv_file_path)
 
-    # Display the last time played on the screen
+    # Display the best time played on the screen
     font_size = 24
     font = pygame.font.Font(None, font_size)
     best_time_text = f"Best time: {best_time:.2f} seconds"
     best_time_rendered = font.render(best_time_text, True, (255, 255, 255))
     screen.blit(best_time_rendered, (10, 10))
 
+    # Get the last time played
     last_time = get_last_time_played(csv_file_path)
 
+    # Display the last time played on the screen
     last_time_text = f"Last time: {last_time:.2f} seconds"
     last_time_rendered = font.render(last_time_text, True, (255, 255, 255))
     screen.blit(last_time_rendered, (10, 40))
@@ -323,7 +326,7 @@ def reset_game():
     objectsMoving = False
 
     player = Player(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPRITE_SHEET_PATH, player_vel_y, PLAYER_SPEED, onGround, isJumping, movingDirection)
-    player.score = 3000
+
     # Create platforms
     platforms_data = [
         # (x, y, width, height, color)
@@ -389,7 +392,6 @@ def reset_game():
 
 
 def main():
-    
     # Initialize Pygame
     pygame.init()
 
@@ -403,14 +405,12 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Platform Game")
 
+    # Initialize the game objects and variables
     player, enemies, platforms, ground_platforms, obstacles, lose, win, objectsMoving = reset_game()
-    # Game loop
-    running = True
-    lose = False
-
-    # Get the current date and time
-    start_time = datetime.now()
     
+    running = True
+
+    # Game loop
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -419,6 +419,7 @@ def main():
         # Get the keys currently pressed
         keys = pygame.key.get_pressed()
 
+        # Quit the game if the escape key is pressed
         if keys[pygame.K_ESCAPE]:
             running = False
 
@@ -429,6 +430,8 @@ def main():
 
             if keys[pygame.K_KP_ENTER]:
                 game_state = PLAYING  # Transition to the playing state
+                # Get the current date and time
+                start_time = datetime.now()
 
         # Game logic
         elif game_state == PLAYING:
@@ -436,7 +439,7 @@ def main():
                 end_time = datetime.now()
                 print("You survived for " + str((end_time - start_time).total_seconds()) + " seconds")
 
-                # Append date and time played to CSV file
+                # Append date and time played to CSV file if the player won
                 if win:
                     with open(csv_file_path, mode='a', newline='') as csv_file:
                         csv_writer = csv.writer(csv_file)
