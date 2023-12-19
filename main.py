@@ -1,8 +1,9 @@
 import pygame
-from pygame.locals import *
-import sys
-from datetime import datetime
 import csv
+import sys
+from pygame.locals import *
+from datetime import datetime
+
 
 class GameObject:
     def __init__(self, x, y, width, height, color):
@@ -170,9 +171,6 @@ JUMP_STRENGTH = -0.5        # Negative because y-axis is flipped
 # Set up CSV file
 csv_file_path = "statistics.csv"
 csv_header = ["Date", "Time Played (seconds)"]
-
-
-import csv
 
 def get_best_time(csv_file_path):
     best_time = float('inf')  
